@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  forwarder:
+    build: .
+    image: misp-secops-forwarder:latest
+    container_name: misp-secops-forwarder
+    env_file:
+      - .env
+    environment:
+      # Override these if needed, otherwise reads from .env
+      - GOOGLE_SA_CREDENTIALS=/app/credentials.json
+      # Toggle TEST_MODE here
+      - TEST_MODE=${TEST_MODE:-false}
+      - MAX_TEST_EVENTS=${MAX_TEST_EVENTS:-3}
+    volumes:
+      # Mount credentials file into the container
+      - ./credentials.json:/app/credentials.json:ro
+      # Persist state so we don't re-fetch everything on restart
+      - forwarder_state:/app/data
+    restart: unless-stopped
+
+volumes:
+  forwarder_state:
