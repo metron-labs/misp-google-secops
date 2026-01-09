@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # But let's try to be clean.
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
-    from config import Config
+    from src.config import Config
 except ImportError:
     # Fallback if run incorrectly
     pass

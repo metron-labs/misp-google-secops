@@ -22,4 +22,4 @@ USER appuser
 # Create a volume for state persistence if not using docker-compose volumes
 # VOLUME /app/state
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "src.main"]

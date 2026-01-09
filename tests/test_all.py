@@ -6,8 +6,8 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from unittest.mock import MagicMock, patch
-from secops_manager import SecOpsManager
-from misp_client import MispClient
+from src.secops.manager import SecOpsManager
+from src.misp.client import MispClient
 
 class TestIntegration(unittest.TestCase):
     # No helper client needed for static methods test, or we can mock credentials load if we instantiate
@@ -58,8 +58,8 @@ class TestIntegration(unittest.TestCase):
         mock_post.return_value = mock_response
 
         # Mock config
-        with patch('config.Config.MISP_URL', 'http://misp'), \
-             patch('config.Config.MISP_API_KEY', 'key'):
+        with patch('src.config.Config.MISP_URL', 'http://misp'), \
+             patch('src.config.Config.MISP_API_KEY', 'key'):
             client = MispClient()
             attrs = client.fetch_attributes(page=1)
             self.assertEqual(len(attrs), 2)
