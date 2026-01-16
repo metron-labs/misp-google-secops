@@ -1,12 +1,8 @@
-<<<<<<< HEAD
-import logging
-=======
 #!/usr/bin/env python3
 """
 UDM Event Generator for IoC Match Testing
 Generates a UDM event based on user-provided IoC value to test SecOps matching
 """
->>>>>>> feature-updates
 import sys
 import uuid
 import json
@@ -15,74 +11,6 @@ import requests
 import google.auth.transport.requests
 from google.oauth2 import service_account
 from datetime import datetime
-<<<<<<< HEAD
-from dotenv import load_dotenv
-
-# Add parent directory to path to import Config if needed, 
-# although for this standalone script we might just read env directly.
-# But let's try to be clean.
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-try:
-    from src.config import Config
-except ImportError:
-    # Fallback if run incorrectly
-    pass
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
-logger = logging.getLogger("traffic-simulator")
-
-# Load env if likely running locally and Config didn't catch it
-load_dotenv()
-
-def get_current_timestamp():
-    # Use UTC 'Z' format
-    return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-
-def main():
-    print("🚀 Starting Traffic Simulation to Trigger IoC Match...")
-    
-    # 1. Credentials
-    creds_path = os.getenv('GOOGLE_SA_CREDENTIALS', 'credentials.json')
-    if not os.path.exists(creds_path):
-        # Try parent dir
-        creds_path = os.path.join('..', 'credentials.json')
-    
-    if not os.path.exists(creds_path):
-        print(f"❌ Could not find credentials.json at {creds_path}")
-        return
-
-    customer_id = os.getenv('GOOGLE_CUSTOMER_ID')
-    if not customer_id:
-        print("❌ GOOGLE_CUSTOMER_ID not set in environment.")
-        return
-
-    # 2. Authenticate
-    try:
-        # Scope for Ingestion
-        creds = service_account.Credentials.from_service_account_file(
-            creds_path,
-            scopes=['https://www.googleapis.com/auth/malachite-ingestion']
-        )
-        auth_req = google.auth.transport.requests.Request()
-        creds.refresh(auth_req)
-        token = creds.token
-        print("✅ Authenticated with Google Cloud")
-    except Exception as e:
-        print(f"❌ Authentication failed: {e}")
-        return
-
-    # 3. Build UDM Event (Stream B)
-    # Simulate match for 'ameteksen.com'
-    target_domain = "ameteksen.com"
-    
-    print(f"📡 Simulating traffic to malicious domain: {target_domain}")
-    
-=======
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -152,65 +80,34 @@ def main():
         print("Invalid type selection")
         return
 
->>>>>>> feature-updates
     event = {
         "metadata": {
             "productName": "TrafficSimulator",
             "vendorName": "Internal",
             "productEventType": "Simulation",
             "eventType": "NETWORK_CONNECTION",
-<<<<<<< HEAD
-            "description": f"Simulated connection to malicious domain {target_domain}",
-=======
             "description": event_desc,
->>>>>>> feature-updates
             "eventTimestamp": get_current_timestamp(),
             "productLogId": str(uuid.uuid4())
         },
         "principal": {
-<<<<<<< HEAD
-            "hostname": "simulation-workstation",
-            "ip": ["192.168.1.100"],
-=======
             "hostname": "test-workstation",
             "ip": ["10.0.0.100"],
->>>>>>> feature-updates
             "user": {
                 "userid": "test_user"
             }
         },
-<<<<<<< HEAD
-        "target": {
-            "hostname": target_domain,
-            "ip": ["203.0.113.55"],
-            "port": 443
-        },
-=======
         "target": udm_target,
->>>>>>> feature-updates
         "network": {
             "ipProtocol": "TCP",
             "direction": "OUTBOUND"
         },
         "securityResult": [{
-<<<<<<< HEAD
-            "description": "Simulation Event",
-=======
             "description": "Test Event for IoC Matching",
->>>>>>> feature-updates
             "severity": "LOW"
         }]
     }
 
-<<<<<<< HEAD
-    payload = {
-        "customerId": customer_id,
-        "events": [event]
-    }
-
-    # 4. Send to Ingestion API
-    url = "https://malachiteingestion-pa.googleapis.com/v2/udmevents:batchCreate"
-=======
     print("\n--- UDM Event Payload ---")
     print(json.dumps(event, indent=2))
     print("-------------------------\n")
@@ -231,30 +128,10 @@ def main():
         'SECOPS_UDM_API_URL',
         'https://malachiteingestion-pa.googleapis.com/v2/udmevents:batchCreate'
     )
->>>>>>> feature-updates
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
-<<<<<<< HEAD
-
-    try:
-        print(f"DTO size: 1 Events")
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
-        
-        if response.status_code == 200:
-            print("✅ SIMULATION SENT SUCCESSFULLY!")
-            print("\n⏳ Next Steps:")
-            print("1. Go to Google SecOps Console")
-            print("2. Navigate to 'Detections' -> 'IoC Matches'")
-            print("3. Look for a match involving 'ameteksen.com'")
-        else:
-            print(f"❌ Failed to send. Status: {response.status_code}")
-            print(f"Response: {response.text}")
-            
-    except Exception as e:
-        print(f"❌ Failed to send simulation event: {e}")
-=======
     
     payload = {
         "customerId": Config.GOOGLE_CUSTOMER_ID,
@@ -278,7 +155,6 @@ def main():
             
     except Exception as e:
         print(f"\n✗ Failed to send event: {e}")
->>>>>>> feature-updates
 
 if __name__ == "__main__":
     main()

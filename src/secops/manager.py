@@ -12,34 +12,15 @@ logger = logging.getLogger(__name__)
 
 class SecOpsManager:
     """
-<<<<<<< HEAD
-    Manager class to handle Google SecOps interactions, including
-    conversion of MISP attributes to Entities and ingestion via the Entity API.
-    """
-    
-    # Entity API endpoint for IoC ingestion
-    ENTITY_API_URL = "https://malachiteingestion-pa.googleapis.com/v2/entities:batchCreate"
-
-=======
     Manager for Google SecOps interactions, including conversion
     of MISP attributes to Entities and ingestion via Entity API.
     """
->>>>>>> feature-updates
     def __init__(self):
         self.creds = None
         self._load_credentials()
 
     def _load_credentials(self):
         try:
-<<<<<<< HEAD
-            # Use Chronicle-specific scope for ingestion
-            self.creds = service_account.Credentials.from_service_account_file(
-                Config.GOOGLE_SA_CREDENTIALS,
-                scopes=['https://www.googleapis.com/auth/malachite-ingestion']
-            )
-        except Exception as e:
-            logger.error(f"Failed to load Google credentials: {e}")
-=======
             self.creds = (
                 service_account.Credentials
                 .from_service_account_file(
@@ -56,7 +37,6 @@ class SecOpsManager:
                    "provided in your configuration is correct and the "
                    f"file is accessible: {e}")
             logger.error(msg)
->>>>>>> feature-updates
             raise
 
     def _get_auth_header(self):
@@ -67,42 +47,16 @@ class SecOpsManager:
         return {'Authorization': f'Bearer {self.creds.token}'}
 
     def send_entities(self, entities):
-<<<<<<< HEAD
-        """
-        Send a batch of Entity Context (IoCs) to Google SecOps.
-        :param entities: List of entity context dicts.
-        """
-        if not entities:
-            return
-
-        headers = self._get_auth_header()
-        headers['Content-Type'] = 'application/json'
-        
-        # Structure the payload as expected by Entity API
-=======
         """Send a batch of Entity Context (IoCs) to Google SecOps."""
         if not entities:
             return
         headers = self._get_auth_header()
         headers['Content-Type'] = 'application/json'
->>>>>>> feature-updates
         payload = {
             "customerId": Config.GOOGLE_CUSTOMER_ID,
             "log_type": "MISP_IOC",
             "entities": entities
         }
-<<<<<<< HEAD
-        
-        logger.info(f"Payload structure: customerId={Config.GOOGLE_CUSTOMER_ID}, entities count={len(entities)}")
-        # Debug print payload if needed, ensuring sensitive info isn't excessive
-        # print("Full Entity Payload JSON:")
-        # print(json.dumps(payload, indent=2))
-        
-        try:
-            logger.info(f"Sending {len(entities)} entities to Google SecOps...")
-            response = requests.post(
-                self.ENTITY_API_URL,
-=======
         logger.debug(
             f"Preparing ingestion payload for customer "
             f"{Config.GOOGLE_CUSTOMER_ID} containing "
@@ -116,22 +70,10 @@ class SecOpsManager:
             logger.info(msg)
             response = requests.post(
                 Config.SECOPS_ENTITY_API_URL,
->>>>>>> feature-updates
                 headers=headers,
                 data=json.dumps(payload),
                 timeout=60
             )
-<<<<<<< HEAD
-            
-            if response.status_code != 200:
-                logger.error(f"Failed to ingest entities. Status: {response.status_code}, Response: {response.text}")
-                response.raise_for_status()
-                
-            logger.info("Successfully ingested entities as IoCs.")
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Entity API error: {e}")
-=======
             if response.status_code != 200:
                 msg = ("The application tried to deliver some threat "
                        "data to Google SecOps, but the request was not "
@@ -149,29 +91,10 @@ class SecOpsManager:
                    "while communicating with the Google SecOps Entity "
                    f"API: {e}")
             logger.error(msg)
->>>>>>> feature-updates
             raise
 
     @staticmethod
     def convert_to_entity(attribute):
-<<<<<<< HEAD
-        """
-        Convert a single MISP attribute to a JSON-serializable Entity dict.
-        """
-        if not attribute:
-            return None
-            
-        attr_type = attribute.get('type')
-        value = attribute.get('value')
-        event_data = attribute.get('Event', {})
-        
-        # Extract event context
-        event_info = event_data.get('info', 'MISP IoC')
-        # event_uuid = event_data.get('uuid', '') # Unused
-        orgc_name = event_data.get('Orgc', {}).get('name', 'Unknown')
-        threat_level_id = event_data.get('threat_level_id', '2')
-        # threat_level_name = event_data.get('ThreatLevel', {}).get('name', 'Medium') # Unused
-=======
         """Convert a MISP attribute to a JSON-serializable Entity."""
         if not attribute:
             return None
@@ -181,7 +104,6 @@ class SecOpsManager:
         event_info = event_data.get('info', 'MISP IoC')
         orgc_name = event_data.get('Orgc', {}).get('name', 'Unknown')
         threat_level_id = event_data.get('threat_level_id', '2')
->>>>>>> feature-updates
         
         # Map MISP threat level to severity
         severity_map = {

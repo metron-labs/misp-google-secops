@@ -1,18 +1,12 @@
-<<<<<<< HEAD
-=======
 import argparse
 import json
->>>>>>> feature-updates
 import logging
 import time
 import json
 import os
 import signal
 import sys
-<<<<<<< HEAD
-=======
 import subprocess
->>>>>>> feature-updates
 from datetime import datetime
 from src.config import Config
 from src.misp.client import MispClient
@@ -26,9 +20,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("misp-forwarder")
 
-<<<<<<< HEAD
-STATE_FILE = "data/state.json"
-=======
 def update_log_level():
     """Update logging level from config."""
     level_name = Config.LOG_LEVEL.upper()
@@ -57,7 +48,6 @@ def display_banner():
         msg = ("An attempt to display the startup banner was made, "
                f"but it didn't quite work: {e}")
         logger.debug(msg)
->>>>>>> feature-updates
 
 def load_state():
     if os.path.exists(STATE_FILE):
@@ -65,11 +55,7 @@ def load_state():
             with open(STATE_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-<<<<<<< HEAD
-            logger.error(f"Failed to load state: {e}")
-=======
             logger.error(f"The application encountered an issue while trying to read its previous progress from {STATE_FILE}. It seems the file might be corrupted or inaccessible: {e}")
->>>>>>> feature-updates
     return {}
 
 def save_state(state):
@@ -77,19 +63,6 @@ def save_state(state):
         os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
         with open(STATE_FILE, 'w') as f:
             json.dump(state, f)
-<<<<<<< HEAD
-        logger.info(f"State saved to {STATE_FILE}. New last_timestamp: {state.get('last_timestamp')}")
-    except Exception as e:
-        logger.error(f"Failed to save state: {e}")
-
-def signal_handler(sig, frame):
-    logger.info("Shutdown signal received. Exiting...")
-    sys.exit(0)
-
-def main():
-    logger.info("Starting MISP to Google SecOps Forwarder...")
-    
-=======
         
         ts = state.get('last_timestamp')
         dt_str = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S') if ts else "N/A"
@@ -221,16 +194,11 @@ def main():
 
     logger.info("The MISP to Google SecOps Forwarder is now initializing and getting ready to bridge your threat intelligence pipeline.")
 
->>>>>>> feature-updates
     # Validate Config
     try:
         Config.validate()
     except ValueError as e:
-<<<<<<< HEAD
-        logger.critical(f"Configuration invalid: {e}")
-=======
         logger.critical(f"The application found some errors in its configuration and cannot continue safely: {e}")
->>>>>>> feature-updates
         sys.exit(1)
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -240,38 +208,6 @@ def main():
     secops = SecOpsManager()
 
     if not misp.test_connection():
-<<<<<<< HEAD
-        logger.error("Could not connect to MISP on startup. Will retry in loop.")
-
-    state = load_state()
-    # Default to 7 days ago if no state, to fetch some initial context
-    # or just start from now? Usually 1-7 days is good for initial sync.
-    # We will use 1 day ago for safety.
-    last_timestamp = state.get('last_timestamp', 0)
-
-    logger.info(f"Starting fetch loop. Last timestamp: {last_timestamp}")
-
-    # TEST MODE from Config
-    if Config.TEST_MODE:
-        logger.info(f"RUNNING IN TEST MODE. Will exit after sending {Config.MAX_TEST_EVENTS} entities.")
-
-    total_events_sent = 0
-
-    while True:
-        try:
-            logger.info("Checking for new attributes...")
-            
-            # Fetch
-            # Simple pagination loop for the current sync window
-            page = 1
-            total_processed = 0
-            
-            while True:
-                attributes = misp.fetch_attributes(
-                    last_timestamp=last_timestamp, 
-                    page=page, 
-                    limit=Config.FETCH_PAGE_SIZE
-=======
         logger.error("The application tried to connect to MISP but couldn't establish a link. It will keep trying automatically during its normal operation.")
 
 
@@ -376,82 +312,11 @@ def main():
                     last_timestamp=last_timestamp, 
                     page=page, 
                     limit=Config.FORWARDER_BATCH_SIZE
->>>>>>> feature-updates
                 )
                 
                 if not attributes:
                     break
                 
-<<<<<<< HEAD
-                #logger.info(f"Fetched {attributes} attributes on page {page}.")
-                
-                # Convert to Entity Context (IoCs)
-                entities = []
-                for attr in attributes:
-                    # TEST MODE: Stop collecting if we have enough
-                    if Config.TEST_MODE and total_events_sent >= Config.MAX_TEST_EVENTS:
-                        break
-                        
-                    entity = SecOpsManager.convert_to_entity(attr)
-                    if entity:
-                        entities.append(entity)
-                
-                # Forward entities (IoCs) in batches
-                if entities:
-                    # In TEST MODE, only send what we need to reach MAX_TEST_EVENTS
-                    if Config.TEST_MODE:
-                        entities_to_send = entities[:Config.MAX_TEST_EVENTS - total_events_sent]
-                    else:
-                        entities_to_send = entities
-                    
-                    # Forward in chunks of FORWARDER_BATCH_SIZE
-                    for i in range(0, len(entities_to_send), Config.FORWARDER_BATCH_SIZE):
-                        batch = entities_to_send[i : i + Config.FORWARDER_BATCH_SIZE]
-                        secops.send_entities(batch)
-                        logger.info(f"Forwarded batch of {len(batch)} IoC entities.")
-                        total_events_sent += len(batch)
-                    
-                    # TEST MODE: Exit after sending required entities
-                    pass
-                        # Removed early exit from here - moved to after state save
-                    
-
-                total_processed += len(attributes)
-                
-                # Update timestamp to the latest seen attribute to avoid huge re-fetches if we crash?
-                # Actually, standard is to update state ONLY after fully processing a time window.
-                # OR update high-water mark.
-                # MISP REST search filter by timestamp is inclusive usually.
-                # We should update last_timestamp to the MAX timestamp seen in this batch + 1s preferably.
-                
-                max_ts = 0
-                for attr in attributes:
-                    ts = int(attr.get('timestamp', 0))
-                    if ts > max_ts:
-                        max_ts = ts
-                
-                if max_ts > 0:
-                    state['last_timestamp'] = max_ts + 1 
-                    save_state(state)
-                    
-                    # TEST MODE: Exit after sending required entities AND saving state
-                    if Config.TEST_MODE and total_events_sent >= Config.MAX_TEST_EVENTS:
-                        logger.info(f"TEST MODE: Successfully sent {total_events_sent} IoC entities to Google SecOps. State saved. Exiting.")
-                        sys.exit(0)
-                
-                page += 1
-
-            if total_processed == 0:
-                logger.info("No new attributes found.")
-            else:
-                logger.info(f"Completed sync cycle. Total processed: {total_processed}")
-            
-        except Exception as e:
-            logger.error(f"Error in main loop: {e}", exc_info=True)
-        
-        logger.info(f"Sleeping for {Config.FETCH_INTERVAL} seconds...")
-        time.sleep(Config.FETCH_INTERVAL)
-=======
                 logger.info(f"Retrieved {len(attributes)} attributes (Page {page}).")
                 
                 entities = []
@@ -504,7 +369,6 @@ def main():
         except Exception as e:
             logger.error(f"Unexpected error in loop: {e}")
             time.sleep(60)
->>>>>>> feature-updates
 
 if __name__ == "__main__":
     main()
