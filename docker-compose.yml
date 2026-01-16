@@ -1,10 +1,17 @@
+<<<<<<< HEAD
 version: '3.8'
 
+=======
+>>>>>>> feature-updates
 services:
   forwarder:
     build: .
     image: misp-secops-forwarder:latest
     container_name: misp-secops-forwarder
+<<<<<<< HEAD
+=======
+    network_mode: host
+>>>>>>> feature-updates
     env_file:
       - .env
     environment:
@@ -18,6 +25,12 @@ services:
       - ./credentials.json:/app/credentials.json:ro
       # Persist state so we don't re-fetch everything on restart
       - forwarder_state:/app/data
+<<<<<<< HEAD
+=======
+      # Ensure config is available at the expected path
+      - ./config.json:/app/config.json
+    command: ["--config", "/app/config.json"]
+>>>>>>> feature-updates
     restart: unless-stopped
 
 volumes:

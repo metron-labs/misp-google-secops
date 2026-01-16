@@ -2,7 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+<<<<<<< HEAD
 # Install dependencies
+=======
+# Install dependencies and chafa
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    chafa \
+    && rm -rf /var/lib/apt/lists/*
+
+>>>>>>> feature-updates
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -22,4 +30,8 @@ USER appuser
 # Create a volume for state persistence if not using docker-compose volumes
 # VOLUME /app/state
 
+<<<<<<< HEAD
 CMD ["python", "-m", "src.main"]
+=======
+ENTRYPOINT ["python", "-m", "src.main"]
+>>>>>>> feature-updates

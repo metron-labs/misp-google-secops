@@ -1,0 +1,23 @@
+⡇⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⣿
+⡇⢀⢀⢀⢀⢀⡠⠔⠃⠉⠁⠀⠀⠀⠩⢀⢀⠁⣀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⣿
+⡇⢀⢀⢁⠔⠁⠀⠀⠀⠀⠀⠀⠀⠀⢀⢀⢀⠁⠄⠑⢅⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⣿
+⡇⠁⡰⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⢀⢀⠁⠄⠀⠀⠡⡐⢀⢀⢀⢀⢀⣠⣠⢁⣠⣠⡀⢀⣠⣠⣠⢀⢀⢀⢀⣀⣠⣠⣀⢀⢀⢁⣴⣿⣠⣠⡐⣀⣠⡀⣀⣠⣀⢀⢀⣠⣠⣠⣀⢀⢀⢀⣠⣠⡀⣠⣠⣀⢀⢀⢀⢀⣿
+⡇⡔⠀⠀⠀⠀⠀⢀⣀⠀⢀⢄⡒⢄⢀⠄⢀⠁⡀⠀⠀⠀⠐⡐⢀⢀⢀⠈⣿⣿⡿⠿⣿⣿⣾⠿⢿⣿⣷⡀⢠⣾⣿⠟⠻⣿⣶⡰⢿⣿⣿⠿⠿⠧⣿⣿⣷⣿⣿⣿⣠⣾⣿⠿⠻⣿⣷⡔⢀⣿⣿⣿⠿⢿⣿⣦⢀⢀⢀⣿
+⣧⠁⠀⠀⠀⠀⢐⠁⢀⢱⢀⢀⢀⠸⠀⠄⢀⢀⡀⠀⠀⠀⠀⠡⢀⢀⢀⢀⣿⣿⢀⢀⢸⣿⡇⢀⢀⣿⣿⠁⢾⣿⣿⣶⣶⣾⣿⡇⢀⣿⣿⢀⢀⢀⣿⣿⡏⢀⢀⠁⣿⣿⡇⢀⢀⢸⣿⣿⢀⣿⣿⠇⢀⢸⣿⣿⢀⢀⢀⣿
+⡏⠀⠀⠀⠀⠀⠈⡒⢑⡂⢀⢀⢀⢀⠀⠄⢀⢀⠁⠀⠀⠀⠀⠘⡀⢀⢀⢀⣿⣿⢀⢀⢸⣿⡇⢀⢀⣿⣿⠁⢹⣿⣿⣄⣠⣠⣤⡔⠨⣿⣿⣄⣠⡤⣿⣿⡇⢀⢀⢀⢻⣿⣧⣠⣠⣾⣿⡟⢀⣿⣿⠁⢀⢸⣿⣿⢀⢀⢀⣿
+⡇⠀⠀⠀⠀⠀⠘⢀⢀⢰⢀⢀⢀⠈⠀⡀⢀⢀⠂⠀⠀⠀⠀⢠⠃⢀⢀⠨⠿⠿⢀⢀⢸⠿⠧⢀⢀⠿⠿⠃⢀⠉⠻⠿⠿⠿⠛⠡⢀⡙⠿⠿⠿⠣⠿⠿⠇⢀⢀⢀⢀⡙⠻⠿⠿⠟⠋⠁⢀⠿⠿⠃⢀⠸⠿⠿⢀⢀⢀⣿
+⣿⠀⠀⠀⠀⠀⢀⢀⢀⠈⢀⢀⢀⠈⠀⠣⢬⠔⠁⠀⠀⠀⠀⠨⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⣶⡖⢀⣀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⣿
+⡇⢀⠀⠀⠀⠀⢀⢀⢀⠈⢀⢀⢀⠈⠀⡎⢀⠨⡄⠀⠀⠀⢀⠃⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⣴⡶⣶⢀⣴⡶⣶⣄⣠⣶⡶⣶⢱⣦⢀⣶⡖⢶⣦⣶⡦⣶⡦⢾⣿⠶⢶⣦⢠⣶⡆⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⣿
+⡇⢀⢂⠀⠀⠀⢀⢀⢀⠈⠈⢆⣁⠜⠀⠑⠁⠐⠁⠀⠀⢠⠊⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⡛⢿⣶⣸⣿⡛⠛⣛⣿⣟⢀⢀⢸⣟⢀⣿⡇⢹⡟⠁⠁⣿⡇⢸⣟⢀⠨⢿⣿⡟⠁⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⣿
+⡇⢀⢀⠑⢄⠀⢀⢀⢀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡔⠡⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⠻⠿⠛⠈⡙⠻⠟⠋⠨⠛⠿⠟⠨⠻⠟⠻⠇⠻⠧⢀⢀⠻⠇⠘⠻⠟⢁⣼⡿⠁⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⡏
+⡇⢀⢀⢀⢀⠡⠢⢀⢀⢀⠀⠀⠀⠀⠀⠀⢀⠤⠒⠡⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢸⠟⠁⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⢀⡇
+⣇⣠⣠⣠⣠⣠⣠⣠⣠⣨⣡⣠⣠⣠⣉⣡⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣠⣨⡇
+2026-01-15 06:01:38,185 - misp-forwarder - INFO - The application is loading your custom configuration settings from /app/config.json.
+2026-01-15 06:01:38,186 - misp-forwarder - INFO - The MISP to Google SecOps Forwarder is now initializing and getting ready to bridge your threat intelligence pipeline.
+2026-01-15 06:01:38,617 - src.misp.client - INFO - The application has successfully established a secure connection to the MISP server and is ready to proceed.
+2026-01-15 06:01:38,631 - misp-forwarder - INFO - The application is entering its routine monitoring loop. It is currently picking up from where it left off, at the point in time: 2026-01-15 05:32:03 (UTC).
+2026-01-15 06:01:38,632 - misp-forwarder - INFO - The application is now checking MISP for any new threat indicators that have been published.
+2026-01-15 06:01:38,632 - src.misp.client - INFO - The application is requesting page 1 of threat indicators from MISP, collecting up to 100 items at once.
+2026-01-15 06:01:39,174 - misp-forwarder - INFO - No new threat indicators were found during this check. The application will stay vigilant and check again soon.
+2026-01-15 06:01:39,176 - misp-forwarder - INFO - The application has successfully saved its current progress. The next check will pick up from indicators published after: 2026-01-15 06:01:38 (UTC).
+2026-01-15 06:01:39,176 - misp-forwarder - INFO - Everything is up to date! The application is now pausing for 3600 seconds before starting its next check.
