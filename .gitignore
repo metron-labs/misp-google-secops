@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+myenv/
+.env_dir/
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+credentials.json
+google_credentials.json
+
+# Local State
+state.json
+
+# Logs
+*.log
+
+# PyCharm / VSCode
+.idea/
+.vscode/
+
+# Test Data (Optional - usually don't want to commit large dumps)
+test_data_raw_misp.json
+test_data_udm_converted.json
