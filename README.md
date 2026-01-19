@@ -576,7 +576,7 @@ Replace `assets/custom.png` with your own image. The application uses `chafa` to
 ## Support & Contributing
 
 For issues, questions, or contributions, please refer to the project repository.
-@
+support@metronlabs.com
 ## License
 
 [Specify your license here]
