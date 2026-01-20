@@ -66,7 +66,7 @@ def save_state(state):
         
         ts = state.get('last_timestamp')
         dt_str = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S') if ts else "N/A"
-        logger.info(f"The application has successfully saved its current progress. The next check will pick up from indicators published after: {dt_str} (UTC).")
+        #logger.info(f"State updated in {STATE_FILE}: {state}")
     except Exception as e:
         logger.error(f"The application tried to save its progress to {STATE_FILE}, but ran into a problem. This might mean it will re-process some data when it restarts: {e}")
 
@@ -166,208 +166,191 @@ def parse_args():
 
 
 
-def main():
-    # First things first, show our banner!
-    display_banner()
-    
-    args = parse_args()
 
-    # Load Config (Args > File > Env > Defaults)
+class ConfigRestartException(Exception):
+    """Raised when configuration changes require a process restart."""
+    pass
+
+def smart_sleep(seconds, check_config_func):
+    """Sleeps for `seconds`, checking config every second."""
+    for _ in range(int(seconds)):
+        if check_config_func():
+            raise ConfigRestartException()
+        time.sleep(1)
+    
+    # Handle fractional seconds if any
+    remaining = seconds - int(seconds)
+    if remaining > 0:
+        time.sleep(remaining)
+        if check_config_func():
+            raise ConfigRestartException()
+
+
+def run_worker_loop(misp, secops, state, args, current_config_mtime):
+    """The main processing loop. Interruptible by ConfigRestartException."""
+    
     config_path = args.config if args.config else "config.json"
+    
+    # Helper to check for updates
+    def check_for_changes():
+        if not (config_path and os.path.exists(config_path)):
+            return False
+        
+        mtime = os.path.getmtime(config_path)
+        if mtime != current_config_mtime:
+            return True
+        return False
+        
+    last_timestamp = state.get('last_timestamp', 0)
+    
+    # Check current Historical Polling config vs memory
+    if last_timestamp == 0:
+        hist_days = parse_days_or_date(Config.HISTORICAL_POLLING_DAYS)
+        if hist_days > 0:
+             logger.info(f"First run detected. Backfilling from {hist_days} days ago.")
+             from datetime import timedelta
+             start_dt = datetime.utcnow() - timedelta(days=hist_days)
+             last_timestamp = int(start_dt.timestamp())
+        else:
+             # Only log this if we actually are starting from scratch
+             last_timestamp = int(datetime.utcnow().timestamp())
+
+    total_events_sent = 0
+
+    while True:
+        # 1. Check Config
+        if check_for_changes():
+             raise ConfigRestartException()
+             
+        logger.info("Checking MISP for new indicators...")
+        sync_start_ts = int(datetime.utcnow().timestamp())
+        page = 1
+        total_processed = 0
+        
+        while True:
+            if check_for_changes():
+                 raise ConfigRestartException()
+                 
+            attributes = misp.fetch_attributes(
+                last_timestamp=last_timestamp, 
+                page=page, 
+                limit=Config.FORWARDER_BATCH_SIZE
+            )
+            
+            if not attributes:
+                 break
+            
+            logger.info(f"Retrieved {len(attributes)} attributes (Page {page}).")
+            
+            entities = []
+            display_items = []
+            for attr in attributes:
+                entity = SecOpsManager.convert_to_entity(attr)
+                if entity:
+                    entities.append(entity)
+                    display_items.append({
+                        'type': attr.get('type', 'unknown'),
+                        'value': attr.get('value', 'N/A'),
+                        'date': attr.get('timestamp', 'N/A') if 'date' not in attr else attr['date'],
+                        'vendor': entity.get('metadata', {}).get('vendor_name', 'Unknown'),
+                        'product': entity.get('metadata', {}).get('product_name', 'MISP')
+                    })
+            
+            if entities:
+                print_summary_table(display_items)
+                for i in range(0, len(entities), Config.FORWARDER_BATCH_SIZE):
+                    batch = entities[i : i + Config.FORWARDER_BATCH_SIZE]
+                    secops.send_entities(batch)
+                    total_events_sent += len(batch)
+                    
+                    if Config.TEST_MODE and total_events_sent >= Config.MAX_TEST_EVENTS:
+                        logger.info(f"Test limit ({Config.MAX_TEST_EVENTS}) reached. Exiting.")
+                        sys.exit(0)
+                        
+            total_processed += len(attributes)
+            page += 1
+            
+        if total_processed > 0:
+            logger.info("Threat data delivered to SecOps.")
+        else:
+            logger.info("No new threat indicators found.")
+            
+        # Update State
+        state['last_timestamp'] = sync_start_ts
+        save_state(state)
+        last_timestamp = sync_start_ts
+        
+        logger.info(f"Sync complete. Sleeping {Config.FETCH_INTERVAL}s.")
+        smart_sleep(Config.FETCH_INTERVAL, check_for_changes)
+
+
+def main():
+    display_banner()
+    args = parse_args()
+    
+    config_path = args.config if args.config else "config.json"
+    
+    # 1. Initial Config Load
     if os.path.exists(config_path):
         logger.info(f"The application is loading your custom configuration settings from {config_path}.")
-        if not Config.reload_from_file(config_path):
-            logger.error(f"Failed to load configuration from {config_path}. Using defaults.")
-    else:
-        logger.info(f"The application looked for {config_path} but didn't find it. It will use defaults or environment variables instead.")
+        Config.reload_from_file(config_path)
     
-    # Override with CLI args if provided
+    # CLI Overrides
     if args.fetch_interval: Config.FETCH_INTERVAL = args.fetch_interval
     if args.fetch_page_size: Config.FETCH_PAGE_SIZE = args.fetch_page_size
     if args.forwarder_batch_size: Config.FORWARDER_BATCH_SIZE = args.forwarder_batch_size
     if args.test_mode: Config.TEST_MODE = True
     if args.max_test_events: Config.MAX_TEST_EVENTS = args.max_test_events
     if args.historical_polling_days: Config.HISTORICAL_POLLING_DAYS = args.historical_polling_days
-
-    # Apply log level
+    
     update_log_level()
-
-    logger.info("The MISP to Google SecOps Forwarder is now initializing and getting ready to bridge your threat intelligence pipeline.")
-
-    # Validate Config
+    
     try:
         Config.validate()
     except ValueError as e:
-        logger.critical(f"The application found some errors in its configuration and cannot continue safely: {e}")
+        logger.critical(f"Configuration Invalid: {e}")
         sys.exit(1)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
+        
+    # 2. Initialize Clients (Persistent)
+    logger.info("Initializing MISP and SecOps connections...")
     misp = MispClient()
     secops = SecOpsManager()
-
-    if not misp.test_connection():
-        logger.error("The application tried to connect to MISP but couldn't establish a link. It will keep trying automatically during its normal operation.")
-
-
-
-    state = load_state()
-    # Determine start timestamp
-    logger.info(f"Last timestamp: {state.get('last_timestamp', 0)},{state}")
-    last_timestamp = state.get('last_timestamp', 0)
     
-    if last_timestamp == 0:
-        # First run? Check historical polling config
-        hist_days = parse_days_or_date(Config.HISTORICAL_POLLING_DAYS)
+    if not misp.test_connection():
+         logger.error("MISP connection failed. Application will retry in the loop.")
+         
+    # 3. Load Persistent State
+    state = load_state()
+    
+    # Track config mtime
+    current_mtime = 0
+    if os.path.exists(config_path):
+        current_mtime = os.path.getmtime(config_path)
         
-        if hist_days > 0:
-            logger.info(f"It looks like this is the first run! The application is configured to look back {hist_days} days to catch up on recent threats.")
-            from datetime import timedelta
-            start_dt = datetime.utcnow() - timedelta(days=hist_days)
-            last_timestamp = int(start_dt.timestamp())
-        else:
-            logger.info("It looks like this is the first run! The application will start monitoring for new threats from this moment onward.")
-            last_timestamp = int(datetime.utcnow().timestamp())
-    else:
-        dt_str = datetime.fromtimestamp(last_timestamp).strftime('%Y-%m-%d %H:%M:%S')
-        logger.info(f"The application is entering its routine monitoring loop. It is currently picking up from where it left off, at the point in time: {dt_str} (UTC).")
+    logger.info("The MISP to Google SecOps Forwarder is now entering the main processing loop.")
 
-    if Config.TEST_MODE:
-        logger.info(f"The application is currently running in TEST MODE. It will process exactly {Config.MAX_TEST_EVENTS} entities and then automatically shut down.")
-
-    total_events_sent = 0
-    config_last_mtime = 0
-    if config_path and os.path.exists(config_path):
-        config_last_mtime = os.path.getmtime(config_path)
-
-    # Track configs to detect changes
-
-    last_historical_polling_days = Config.HISTORICAL_POLLING_DAYS
-    logger.info(f"Historical polling days: {last_historical_polling_days}")
-
-    def _reload_config():
-        nonlocal config_last_mtime
-        if not (config_path and os.path.exists(config_path)):
-            return False
-        
-        current = os.path.getmtime(config_path)
-        if current == config_last_mtime:
-            return False
-            
-        logger.info("Config modification detected. Reloading...")
-        if not Config.reload_from_file(config_path):
-            logger.error(f"Failed to reload config from {config_path}.")
-            return False
-            
-        config_last_mtime = current
-        update_log_level()
-        logger.info(f"Config reloaded. Batch: {Config.FORWARDER_BATCH_SIZE}")
-        return True
-
-    def _check_historical_polling():
-        nonlocal last_timestamp, last_historical_polling_days
-        if str(Config.HISTORICAL_POLLING_DAYS) == str(last_historical_polling_days):
-            return False
-
-        logger.info("Historical Polling changed. Resyncing...")
-        offset = parse_days_or_date(Config.HISTORICAL_POLLING_DAYS)
-        if offset > 0:
-            from datetime import timedelta
-            new_start = datetime.utcnow() - timedelta(days=offset)
-            last_timestamp = int(new_start.timestamp())
-            logger.info(f"Resetting sync start time to {new_start} (UTC).")
-        
-        last_historical_polling_days = Config.HISTORICAL_POLLING_DAYS
-        return True
-
-
-
-    def check_config_updates():
-        if _reload_config():
-            restart = _check_historical_polling()
-
-            return restart
-        return False
+    # 4. Supervisor Loop (Hot Reload)
     while True:
         try:
-            if check_config_updates():
-                logger.info("Configuration change. Restarting loop.")
-                continue
-
-            logger.info("Checking MISP for new indicators...")
+            run_worker_loop(misp, secops, state, args, current_mtime)
             
-            sync_start_ts = int(datetime.utcnow().timestamp())
-            page = 1
-            total_processed = 0
-            restart_loop = False
+        except ConfigRestartException:
+            logger.info("Configuration updated")
             
-            while True:
-                if check_config_updates():
-                    logger.info("Configuration change detected during fetch. Restarting cycle...")
-                    restart_loop = True
-                    break
-
-                attributes = misp.fetch_attributes(
-                    last_timestamp=last_timestamp, 
-                    page=page, 
-                    limit=Config.FORWARDER_BATCH_SIZE
-                )
-                
-                if not attributes:
-                    break
-                
-                logger.info(f"Retrieved {len(attributes)} attributes (Page {page}).")
-                
-                entities = []
-                display_items = []
-                for attr in attributes:
-                    entity = SecOpsManager.convert_to_entity(attr)
-                    if entity:
-                        entities.append(entity)
-                        display_items.append({
-                            'type': attr.get('type', 'unknown'),
-                            'value': attr.get('value', 'N/A'),
-                            'date': attr.get('timestamp', 'N/A') if 'date' not in attr else attr['date'],
-                            'vendor': entity.get('metadata', {}).get('vendor_name', 'Unknown'),
-                            'product': entity.get('metadata', {}).get('product_name', 'MISP')
-                        })
-                
-                if entities:
-                    print_summary_table(display_items)
-                    for i in range(0, len(entities), Config.FORWARDER_BATCH_SIZE):
-                        batch = entities[i : i + Config.FORWARDER_BATCH_SIZE]
-                        secops.send_entities(batch)
-                        total_events_sent += len(batch)
-                        if Config.TEST_MODE and total_events_sent >= Config.MAX_TEST_EVENTS:
-                            logger.info(f"Test limit ({Config.MAX_TEST_EVENTS}) reached. Exiting.")
-
-                            sys.exit(0)
-                
-                total_processed += len(attributes)
-                page += 1
+            # Use 'manage.py' style reload logic: Re-read file, update Config object in-place
+            if os.path.exists(config_path):
+                Config.reload_from_file(config_path)
+                current_mtime = os.path.getmtime(config_path)
+                      
+            update_log_level()
+            logger.info("Restarting processing loop with new configuration")
             
-            if restart_loop:
-                continue
-
-            if total_processed > 0:
-                logger.info("Threat data delivered to SecOps.")
-                state['last_timestamp'] = sync_start_ts
-                save_state(state)
-                last_timestamp = sync_start_ts
-            else:
-                logger.info("No new threat indicators found.")
-                state['last_timestamp'] = sync_start_ts
-                save_state(state)
-                last_timestamp = sync_start_ts
-
-            logger.info(f"Sync complete. Sleeping {Config.FETCH_INTERVAL}s.")
-            time.sleep(Config.FETCH_INTERVAL)
-
+            # Loop continues immediately, calling run_worker_loop again
+            
         except KeyboardInterrupt:
             signal_handler(None, None)
         except Exception as e:
-            logger.error(f"Unexpected error in loop: {e}")
+            logger.error(f"Unexpected Error: {e}")
             time.sleep(60)
 
 if __name__ == "__main__":
