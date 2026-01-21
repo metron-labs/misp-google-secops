@@ -100,8 +100,12 @@ When IoCs are ingested as Entity Context, they:
 ### Required Accounts & Access
 
 1. **MISP Instance**
-   - URL and API key with read access
-   - Network connectivity from deployment environment
+   - **Obtaining an instance (if needed):**
+     - [MISP Docker](https://github.com/MISP/misp-docker/blob/master/README.md) (Recommended for quick setup)
+     - [Manual Installation Guide](https://misp.github.io/MISP/)
+   - **Access Requirements (Once instance is ready):**
+     - URL and API key with read access
+     - Network connectivity from deployment environment
 
 2. **Google Cloud Project**
    - SecOps instance provisioned
