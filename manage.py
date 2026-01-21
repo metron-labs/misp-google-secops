@@ -5,10 +5,19 @@ Allows runtime updates to config.json
 """
 import argparse
 import json
+import logging
 import os
 import sys
 
-CONFIG_FILE = "/app/config.json"
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger("config-manager")
+
+CONFIG_FILE = "config.json"
 
 VALID_KEYS = {
     "FETCH_INTERVAL": int,
@@ -26,13 +35,13 @@ VALID_KEYS = {
 def load_config():
     """Load current configuration."""
     if not os.path.exists(CONFIG_FILE):
-        print(f"Error: Config file not found at {CONFIG_FILE}")
+        logger.error(f"Error: Config file not found at {CONFIG_FILE}")
         sys.exit(1)
     try:
         with open(CONFIG_FILE, 'r') as f:
             return json.load(f)
     except Exception as e:
-        print(f"Error reading config: {e}")
+        logger.error(f"Error reading config: {e}")
         sys.exit(1)
 
 def save_config(config):
@@ -40,9 +49,9 @@ def save_config(config):
     try:
         with open(CONFIG_FILE, 'w') as f:
             json.dump(config, f, indent=4)
-        print("Configuration updated successfully.")
+        logger.info("Configuration updated successfully.")
     except Exception as e:
-        print(f"Error writing config: {e}")
+        logger.error(f"Error writing config: {e}")
         sys.exit(1)
 
 def convert_value(key, value):
@@ -73,20 +82,20 @@ def convert_value(key, value):
 def cmd_list(args):
     """List all configuration values."""
     config = load_config()
-    print("\nCurrent Configuration:")
-    print("=" * 50)
+    logger.info("\nCurrent Configuration:")
+    logger.info("=" * 50)
     for key, value in sorted(config.items()):
-        print(f"{key:30} = {value}")
-    print("=" * 50)
+        logger.info(f"{key:30} = {value}")
+    logger.info("=" * 50)
 
 def cmd_get(args):
     """Get a specific configuration value."""
     config = load_config()
     key = args.key.upper()
     if key not in config:
-        print(f"Error: Key '{key}' not found in configuration")
+        logger.error(f"Error: Key '{key}' not found in configuration")
         sys.exit(1)
-    print(f"{key} = {config[key]}")
+    logger.info(f"{key} = {config[key]}")
 
 def cmd_set(args):
     """Set a configuration value."""
@@ -94,20 +103,20 @@ def cmd_set(args):
     key = args.key.upper()
     
     if key not in VALID_KEYS:
-        print(f"Error: Invalid configuration key: {key}")
-        print(f"Valid keys: {', '.join(VALID_KEYS.keys())}")
+        logger.error(f"Error: Invalid configuration key: {key}")
+        logger.info(f"Valid keys: {', '.join(VALID_KEYS.keys())}")
         sys.exit(1)
     
     try:
         new_value = convert_value(key, args.value)
     except ValueError as e:
-        print(f"Error: {e}")
+        logger.error(f"Error: {e}")
         sys.exit(1)
     
     old_value = config.get(key)
     config[key] = new_value
     save_config(config)
-    print(f"Updated {key}: {old_value} -> {new_value}")
+    logger.info(f"Updated {key}: {old_value} -> {new_value}")
 
 def main():
     parser = argparse.ArgumentParser(

@@ -1,6 +1,9 @@
 import os
 from dotenv import load_dotenv
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file if present
 load_dotenv()
@@ -47,9 +50,8 @@ class Config:
             Config.load_from_dict(config_dict)
             return True
         except Exception as e:
-            print(f"DEBUG: Failed to reload config file: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"DEBUG: Failed to reload config file: {e}")
+            logger.exception(e)
             return False
 
     @staticmethod
