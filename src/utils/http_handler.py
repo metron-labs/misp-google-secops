@@ -28,9 +28,6 @@ class HTTPErrorHandler:
         custom_messages: Optional[Dict[int, str]] = None
     ):
         # Initialize HTTP error handler.
-        # Args:
-        #   service_name: Name of service (e.g., "MISP", "Google SecOps")
-        #   custom_messages: Optional dict of status code to error messages
         self.service_name = service_name
         self.messages = {**self.COMMON_MESSAGES}
         if custom_messages:
@@ -38,10 +35,6 @@ class HTTPErrorHandler:
     
     def handle_response(self, response) -> None:
         # Handle HTTP response and raise appropriate errors.
-        # Args:
-        #   response: requests.Response object
-        # Raises:
-        #   requests.HTTPError: If response status is not successful
         status_code = response.status_code
         
         # Success - no action needed
