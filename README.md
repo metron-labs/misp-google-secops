@@ -286,8 +286,8 @@ docker exec misp-secops-forwarder python manage.py set FETCH_INTERVAL 1800
 # Change page size to 50
 docker exec misp-secops-forwarder python manage.py set FETCH_PAGE_SIZE 50
 
-# Set historical polling to 14 days
-docker exec misp-secops-forwarder python manage.py set HISTORICAL_POLLING_DATE 14
+# Set historical polling
+docker exec misp-secops-forwarder python manage.py set HISTORICAL_POLLING_DATE 2025-01-01 (format: YYYY-MM-DD)
 
 # Enable test mode
 docker exec misp-secops-forwarder python manage.py set TEST_MODE true
