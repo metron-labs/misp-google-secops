@@ -71,7 +71,7 @@ When IoCs are ingested as Entity Context, they:
 
 ## Architecture
 
-![MISP Architecture](assets\MISP-Architecture-image.png)
+![MISP Architecture](assets/MISP-Architecture-image.png)
 
 ### Data Flow
 
