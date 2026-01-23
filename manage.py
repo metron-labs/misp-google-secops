@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-"""
-Configuration Management CLI Tool
-Allows runtime updates to config.json
-"""
+# Configuration Management CLI Tool
+# Allows runtime updates to config.json
 import argparse
 import json
 import logging
@@ -26,14 +24,12 @@ VALID_KEYS = {
     "IOC_EXPIRATION_DAYS": int,
     "TEST_MODE": bool,
     "MAX_TEST_EVENTS": int,
-    "HISTORICAL_POLLING_DAYS": str,
-    "LOG_LEVEL": str,
-    "BACKFILL_DAYS": str,
-    "BACKFILL_UNTIL_DAYS": str
+    "HISTORICAL_POLLING_DATE": str,
+    "LOG_LEVEL": str
 }
 
 def load_config():
-    """Load current configuration."""
+    # Load current configuration.
     if not os.path.exists(CONFIG_FILE):
         logger.error(f"Error: Config file not found at {CONFIG_FILE}")
         sys.exit(1)
@@ -45,7 +41,7 @@ def load_config():
         sys.exit(1)
 
 def save_config(config):
-    """Save configuration to file."""
+    # Save configuration to file.
     try:
         with open(CONFIG_FILE, 'w') as f:
             json.dump(config, f, indent=4)
@@ -55,7 +51,7 @@ def save_config(config):
         sys.exit(1)
 
 def convert_value(key, value):
-    """Convert string value to appropriate type."""
+    # Convert string value to appropriate type.
     expected_type = VALID_KEYS.get(key)
     if expected_type is None:
         raise ValueError(f"Unknown configuration key: {key}")
@@ -80,7 +76,7 @@ def convert_value(key, value):
     return value
 
 def cmd_list(args):
-    """List all configuration values."""
+    # List all configuration values.
     config = load_config()
     logger.info("\nCurrent Configuration:")
     logger.info("=" * 50)
@@ -89,7 +85,7 @@ def cmd_list(args):
     logger.info("=" * 50)
 
 def cmd_get(args):
-    """Get a specific configuration value."""
+    # Get a specific configuration value.
     config = load_config()
     key = args.key.upper()
     if key not in config:
@@ -98,7 +94,7 @@ def cmd_get(args):
     logger.info(f"{key} = {config[key]}")
 
 def cmd_set(args):
-    """Set a configuration value."""
+    # Set a configuration value.
     config = load_config()
     key = args.key.upper()
     
@@ -119,6 +115,7 @@ def cmd_set(args):
     logger.info(f"Updated {key}: {old_value} -> {new_value}")
 
 def main():
+    # Main entry point.
     parser = argparse.ArgumentParser(
         description='Manage MISP Forwarder configuration at runtime'
     )

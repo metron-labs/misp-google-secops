@@ -2,17 +2,16 @@ import unittest
 import sys
 import os
 
-# Add parent directory to path so we can import modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directory to path for module imports
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent_dir)
 
 from unittest.mock import MagicMock, patch
 from src.secops.manager import SecOpsManager
 from src.misp.client import MispClient
 
 class TestIntegration(unittest.TestCase):
-    # No helper client needed for static methods test, or we can mock credentials load if we instantiate
-    # But for conversion test, we can call static method directly if we kept it static.
-    # I kept convert_to_entity as static.
+    # Tests for MISP to SecOps conversion and integration
     pass
 
     def test_entity_conversion_ip(self):
@@ -33,7 +32,8 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(entity_ctx['entity']['ip'], '1.2.3.4')
         self.assertEqual(entity_ctx['metadata']['product_name'], 'MISP')
         self.assertEqual(entity_ctx['metadata']['entity_type'], 'IP_ADDRESS')
-        self.assertEqual(entity_ctx['metadata']['threat'][0]['severity'], 'HIGH')
+        severity = entity_ctx['metadata']['threat'][0]['severity']
+        self.assertEqual(severity, 'HIGH')
 
     def test_entity_conversion_hash(self):
         misp_attr = {
@@ -43,7 +43,8 @@ class TestIntegration(unittest.TestCase):
             'Event': {'info': 'Hash Event'}
         }
         entity_ctx = SecOpsManager.convert_to_entity(misp_attr)
-        self.assertEqual(entity_ctx['entity']['file']['sha256'], 'deadbeef')
+        file_hash = entity_ctx['entity']['file']['sha256']
+        self.assertEqual(file_hash, 'deadbeef')
         self.assertEqual(entity_ctx['metadata']['entity_type'], 'FILE')
 
     @patch('requests.post')

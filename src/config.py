@@ -9,12 +9,14 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 class Config:
-    """Application configuration loaded from environment variables."""
+    # Application configuration loaded from environment variables.
     
     # MISP Settings
     MISP_URL = os.getenv('MISP_URL')
     MISP_API_KEY = os.getenv('MISP_API_KEY')
-    MISP_VERIFY_SSL = os.getenv('MISP_VERIFY_SSL', 'true').lower() == 'true'
+    MISP_VERIFY_SSL = (
+        os.getenv('MISP_VERIFY_SSL', 'true').lower() == 'true'
+    )
     
     # Google SecOps Settings
     GOOGLE_SA_CREDENTIALS = os.getenv('GOOGLE_SA_CREDENTIALS')
@@ -23,7 +25,7 @@ class Config:
     SECOPS_ENTITY_API_URL = os.getenv('SECOPS_ENTITY_API_URL')
     
     # Polling & Processing Settings
-    FETCH_INTERVAL = 3600  # Default 1 hour in seconds
+    FETCH_INTERVAL = 3600
     FETCH_PAGE_SIZE = 2
     FORWARDER_BATCH_SIZE = 2
     
@@ -35,32 +37,41 @@ class Config:
     MAX_TEST_EVENTS = 3
 
     # Historical Polling Settings
-    HISTORICAL_POLLING_DAYS = 0
+    HISTORICAL_POLLING_DATE = 0
+
+    # Log Level Settings
     LOG_LEVEL = 'INFO'
-    BACKFILL_DAYS = 0
-    BACKFILL_UNTIL_DAYS = 0
 
     @staticmethod
     def reload_from_file(filepath):
-        """Reload configuration from JSON file."""
+        # Reload configuration from JSON file.
         try:
             with open(filepath, 'r') as f:
                 config_dict = json.load(f)
             Config.load_from_dict(config_dict)
-            Config.load_from_dict(config_dict)
             return True
         except Exception as e:
-            logger.error(f"DEBUG: Failed to reload config file: {e}")
+            logger.error(f"Failed to reload config file: {e}")
             logger.exception(e)
             return False
 
     @staticmethod
+    def _convert_value(key, value, expected_type):
+        # Convert value to expected type.
+        if expected_type == bool and isinstance(value, str):
+            return value.lower() == 'true'
+        elif expected_type == int:
+            return int(value)
+        elif expected_type:
+            return expected_type(value)
+        return value
+
+    @staticmethod
     def load_from_dict(config_dict):
-        """Update configuration from a dictionary (e.g., from JSON or CLI args)."""
+        # Update configuration from dictionary.
         if not config_dict:
             return
 
-        # Mapping of config keys to expected types
         key_types = {
             'MISP_URL': str,
             'MISP_API_KEY': str,
@@ -77,35 +88,49 @@ class Config:
         }
 
         for key, value in config_dict.items():
-            if hasattr(Config, key) and value is not None:
-                # If value came from JSON, types are likely already correct (e.g. int, bool)
-                # But if we want to be safe or support CLI string overrides:
-                expected_type = key_types.get(key)
-                try:
-                    # Handle boolean conversion from strings if necessary
-                    if expected_type == bool and isinstance(value, str):
-                        setattr(Config, key, value.lower() == 'true')
-                    elif expected_type and not isinstance(value, expected_type) and expected_type is not str:
-                            # Attempt cast if types don't match (e.g. "100" -> 100)
-                            if expected_type == int:
-                                # Special case for ints that might optionally be N/A or empty?
-                                # For this specific app, strict ints are fine.
-                                setattr(Config, key, expected_type(value))
-                            else:
-                                setattr(Config, key, expected_type(value))
-                    else:
-                        setattr(Config, key, value)
-                except ValueError:
-                    pass
+            if not hasattr(Config, key) or value is None:
+                continue
+                
+            expected_type = key_types.get(key)
+            try:
+                if isinstance(value, expected_type) or not expected_type:
+                    setattr(Config, key, value)
+                elif expected_type is not str:
+                    converted = Config._convert_value(
+                        key, value, expected_type
+                    )
+                    setattr(Config, key, converted)
+                else:
+                    setattr(Config, key, value)
+            except (ValueError, TypeError):
+                pass
+
+    MAX_ALLOWED_BATCH_SIZE = 500
 
     @staticmethod
     def validate():
-        """Validate critical configuration."""
+        # Validate critical configuration.
+        if Config.FORWARDER_BATCH_SIZE > Config.MAX_ALLOWED_BATCH_SIZE:
+            msg = (
+                f"FORWARDER_BATCH_SIZE "
+                f"({Config.FORWARDER_BATCH_SIZE}) exceeds safety "
+                f"limit. Capping to {Config.MAX_ALLOWED_BATCH_SIZE} "
+                f"to stay within API payload limits (4MB)."
+            )
+            logging.getLogger("misp-forwarder").warning(msg)
+            Config.FORWARDER_BATCH_SIZE = Config.MAX_ALLOWED_BATCH_SIZE
+
         missing = []
-        if not Config.MISP_URL: missing.append('MISP_URL')
-        if not Config.MISP_API_KEY: missing.append('MISP_API_KEY')
-        if not Config.GOOGLE_SA_CREDENTIALS: missing.append('GOOGLE_SA_CREDENTIALS')
-        if not Config.GOOGLE_CUSTOMER_ID: missing.append('GOOGLE_CUSTOMER_ID')
+        if not Config.MISP_URL:
+            missing.append('MISP_URL')
+        if not Config.MISP_API_KEY:
+            missing.append('MISP_API_KEY')
+        if not Config.GOOGLE_SA_CREDENTIALS:
+            missing.append('GOOGLE_SA_CREDENTIALS')
+        if not Config.GOOGLE_CUSTOMER_ID:
+            missing.append('GOOGLE_CUSTOMER_ID')
         
         if missing:
-            raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+            msg = f"Missing required environment variables: "
+            msg += f"{', '.join(missing)}"
+            raise ValueError(msg)

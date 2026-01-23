@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-"""
-UDM Event Generator for IoC Match Testing
-Generates a UDM event based on user-provided IoC value to test SecOps matching
-"""
+# UDM Event Generator for IoC Match Testing
+# Generates a UDM event based on user-provided IoC value to test SecOps matching
 import sys
 import uuid
 import json
@@ -31,11 +29,11 @@ except ImportError as e:
     sys.exit(1)
 
 def get_current_timestamp():
-    """Returns current UTC timestamp in ISO 8601 format."""
+    # Returns current UTC timestamp in ISO 8601 format.
     return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 def main():
-    """Main execution function for UDM event generation."""
+    # Main execution function for UDM event generation.
     logger.info("UDM Event Generator for IoC Match Testing")
     logger.info("=" * 50)
     

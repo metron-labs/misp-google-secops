@@ -11,29 +11,25 @@ from src.config import Config
 from src.misp.client import MispClient
 from src.secops.manager import SecOpsManager
 
-
 # Configure logging
 logging.basicConfig(
-   level=logging.INFO,
-   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-   handlers=[logging.StreamHandler(sys.stdout)]
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger("misp-forwarder")
 
-
 def update_log_level():
-    """Update logging level from config."""
+    # Update logging level from config.
     level_name = Config.LOG_LEVEL.upper()
     level = getattr(logging, level_name, logging.INFO)
     logging.getLogger().setLevel(level)
     logger.setLevel(level)
 
-
 STATE_FILE = "misp_data/state.json"
-
-
+            
 def display_banner():
-    """Displays the startup ASCII banner using custom.png."""
+    # Displays the startup ASCII banner using custom.png.
     try:
         banner_path = "assets/custom.png"
         if os.path.exists(banner_path):
@@ -43,86 +39,131 @@ def display_banner():
                 check=False
             )
         else:
-            msg = (f"The application could not find the startup "
-                   f"banner image at {banner_path}. Skipping.")
+            msg = (
+                "The application tried to display a startup "
+                "banner, but could not find the image at "
+                f"{banner_path}."
+            )
             logger.warning(msg)
     except Exception as e:
-        msg = f"Unable to display the startup banner: {e}"
+        msg = (
+            "An attempt to display the startup banner was made, "
+            f"but it didn't quite work: {e}"
+        )
         logger.debug(msg)
 
-
 def load_state():
-    """Loads application state from a JSON file."""
+    # Load state from file.
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            msg = (f"Unable to read progress from {STATE_FILE}. "
-                   f"File may be corrupted: {e}")
+            msg = (
+                "The application encountered an issue while trying "
+                f"to read its previous progress from {STATE_FILE}. "
+                f"It seems the file might be corrupted or "
+                f"inaccessible: {e}"
+            )
             logger.error(msg)
     return {}
 
-
 def save_state(state):
-    """Saves application state to a JSON file."""
+    # Save state to file.
     try:
         os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
         with open(STATE_FILE, 'w') as f:
             json.dump(state, f)
+        
+        ts = state.get('last_timestamp')
+        if ts:
+            dt_str = datetime.fromtimestamp(ts).strftime(
+                '%Y-%m-%d %H:%M:%S'
+            )
     except Exception as e:
-        msg = (f"Failed to save progress to {STATE_FILE}. "
-               f"Data might be re-processed on restart: {e}")
+        msg = (
+            "The application tried to save its progress to "
+            f"{STATE_FILE}, but ran into a problem. This might "
+            f"mean it will re-process some data when it restarts: {e}"
+        )
         logger.error(msg)
 
-
 def signal_handler(sig, frame):
-    """Handles termination signals for graceful shutdown."""
-    msg = ("Shutdown signal received. Closing connections "
-           "and stopping operations.")
+    # Handle shutdown signals gracefully.
+    msg = (
+        "A shutdown signal was received. The application is now "
+        "gracefully closing its connections and stopping its work."
+    )
     logger.info(msg)
     sys.exit(0)
 
-
 def extract_entity_value(entity_data):
-    """Extract primary identifier from entity structure."""
-    keys = ['hostname', 'ip', 'url']
-    for key in keys:
-        if key in entity_data:
-            return entity_data[key]
-    if 'file' in entity_data:
-        f_data = entity_data['file']
+    # Extract primary identifier from nested entity structure.
+    inner = entity_data.get('entity', entity_data)
+    
+    if 'hostname' in inner:
+        return inner['hostname']
+    if 'ip' in inner:
+        return inner['ip']
+    if 'url' in inner:
+        return inner['url']
+    if 'file' in inner:
+        f_data = inner['file']
         return next(iter(f_data.values())) if f_data else "N/A"
     return "N/A"
 
-
 def parse_days_or_date(val):
-    """Parses a value as days (int) or date (YYYY-MM-DD)."""
+    # Parse value as days (int) or date (YYYY-MM-DD).
     if not val:
         return 0
     val = str(val).strip()
     try:
         target_date = datetime.strptime(val, '%Y-%m-%d')
+        
+        if target_date > datetime.utcnow():
+            msg = (
+                f"Invalid HISTORICAL_POLLING_DATE: '{val}' is in "
+                "the future. Historical polling can only look back "
+                "at past data. Please provide a date that is today "
+                "or earlier. Disabling historical polling (using 0 "
+                "days)."
+            )
+            logger.error(msg)
+            return 0
+            
         delta = (datetime.utcnow() - target_date).days
         return max(0, delta)
     except ValueError:
         try:
-            return int(val)
+            days = int(val)
+            if days < 0:
+                msg = (
+                    f"Invalid HISTORICAL_POLLING_DATE: Negative days "
+                    f"({days}) are not allowed. Please use 0 to "
+                    "disable historical polling or a positive number. "
+                    "Disabling historical polling (using 0 days)."
+                )
+                logger.error(msg)
+                return 0
+            return days
         except ValueError:
-            msg = f"Invalid value: {val}. Using 0."
+            msg = (
+                f"Invalid value: {val}. Must be integer days or "
+                "YYYY-MM-DD."
+            )
             logger.error(msg)
             return 0
 
-
 def log_summary_table(items):
-    """Logs a structured ASCII table of threat entities."""
+    # Logs a structured ASCII table of threat entities.
     if not items:
         return
     headers = ["Type", "Value", "Collected Date", "Vendor", "Product"]
     col_widths = [15, 30, 15, 12, 10]
-    header_line = " | ".join(h.ljust(w) for h, w in zip(headers, col_widths))
-    
-    logger.info("-" * len(header_line))
+    header_line = " | ".join(
+        h.ljust(w) for h, w in zip(headers, col_widths)
+    )
+    logger.info("\n" + "="*len(header_line))
     logger.info(header_line)
     logger.info("-" * len(header_line))
     for item in items:
@@ -133,33 +174,52 @@ def log_summary_table(items):
             str(item.get('vendor', 'Unknown'))[:col_widths[3]],
             str(item.get('product', 'MISP'))[:col_widths[4]]
         ]
-        logger.info(" | ".join(val.ljust(w) for val, w in zip(row, col_widths)))
-    logger.info("-" * len(header_line))
-
+        logger.info(" | ".join(
+            val.ljust(width) for val, width in zip(row, col_widths)
+        ))
+    logger.info("="*len(header_line) + "\n")
 
 def parse_args():
-    """Parses command line arguments."""
+    # Parse command line arguments.
     parser = argparse.ArgumentParser(
         description='MISP to Google SecOps Forwarder'
     )
-    parser.add_argument('--config', type=str, help='Path to JSON config')
-    parser.add_argument('--fetch-interval', type=int, help='Interval in s')
-    parser.add_argument('--fetch-page-size', type=int, help='Page size')
-    parser.add_argument('--forwarder-batch-size', type=int, help='Batch size')
-    parser.add_argument('--test-mode', action='store_true', help='Test mode')
-    parser.add_argument('--max-test-events', type=int, help='Max test events')
-    parser.add_argument('--historical-polling-days', type=str,
-                        help='Days or YYYY-MM-DD for backfill')
+    parser.add_argument(
+        '--config', type=str, help='Path to JSON configuration file'
+    )
+    parser.add_argument(
+        '--fetch-interval', type=int,
+        help='Polling interval in seconds'
+    )
+    parser.add_argument(
+        '--fetch-page-size', type=int,
+        help='Attributes per page request'
+    )
+    parser.add_argument(
+        '--forwarder-batch-size', type=int,
+        help='Events per Ingestion API call'
+    )
+    parser.add_argument(
+        '--test-mode', action='store_true', help='Run in test mode'
+    )
+    parser.add_argument(
+        '--max-test-events', type=int,
+        help='Max events to process in test mode'
+    )
+    parser.add_argument(
+        '--historical-polling-days', type=str,
+        help='Days to look back on first run (0 = disable) or date'
+    )
+
     return parser.parse_args()
 
 
 class ConfigRestartException(Exception):
-    """Raised when configuration changes require a process restart."""
+    # Raised when configuration changes require restart.
     pass
 
-
 def smart_sleep(seconds, check_config_func):
-    """Sleeps for elements, checking config status every second."""
+    # Sleeps for seconds, checking config every second.
     for _ in range(int(seconds)):
         if check_config_func():
             raise ConfigRestartException()
@@ -174,143 +234,207 @@ def smart_sleep(seconds, check_config_func):
 
 CSV_FILE = "misp_data/pushed_events.csv"
 
-
-def append_to_csv(entities):
-    """Appends pushed entities to a CSV file for tracking."""
-    if not entities:
+def append_to_csv(data_pairs):
+    # Append pushed entities to CSV file for tracking.
+    if not data_pairs:
         return
+        
     try:
         file_exists = os.path.exists(CSV_FILE)
         os.makedirs(os.path.dirname(CSV_FILE), exist_ok=True)
+        
         with open(CSV_FILE, 'a') as f:
             if not file_exists:
-                f.write("timestamp,value,type,vendor,product,severity\n")
+                header = (
+                    "now_timestamp,misp_uuid,misp_type,value,"
+                    "udm_type,severity,vendor,event_info\n"
+                )
+                f.write(header)
+            
             now = datetime.utcnow().isoformat()
-            for e in entities:
-                metadata = e.get('metadata', {})
-                val = extract_entity_value(e)
-                etype = metadata.get('entity_type', 'UNKNOWN')
-                vendor = metadata.get('vendor_name', 'N/A')
-                product = metadata.get('product_name', 'N/A')
-                severity = (metadata.get('threat', [{}])[0].get('severity', 'N/A')
-                            if metadata.get('threat') else 'N/A')
-                line = f"{now},{val},{etype},{vendor},{product},{severity}\n"
-                f.write(line)
-        logger.info(f"Appended {len(entities)} events to {CSV_FILE}")
+            for attr, entity in data_pairs:
+                 metadata = entity.get('metadata', {})
+                 val = extract_entity_value(entity)
+                 udm_type = metadata.get('entity_type', 'UNKNOWN')
+                 vendor = metadata.get('vendor_name', 'N/A')
+                 
+                 threats = metadata.get('threat', [])
+                 severity = (
+                     threats[0].get('severity', 'N/A')
+                     if threats else 'N/A'
+                 )
+                 event_info = (
+                     threats[0].get('summary', 'N/A')
+                     if threats else 'N/A'
+                 )
+                 
+                 misp_uuid = attr.get('uuid', 'N/A')
+                 misp_type = attr.get('type', 'N/A')
+                 
+                 info_safe = str(event_info).replace(',', ';')
+                 info_safe = info_safe.replace('\n', ' ')
+                 line = (
+                     f"{now},{misp_uuid},{misp_type},{val},"
+                     f"{udm_type},{severity},{vendor},{info_safe}\n"
+                 )
+                 f.write(line)
+                 
+        logger.info(f"Appended {len(data_pairs)} events to {CSV_FILE}")
     except Exception as e:
         logger.error(f"Failed to write to CSV tracking file: {e}")
 
-
-def handle_historical_sync(state):
-    """Detects if historical sync is needed and updates state."""
-    current_hist = str(Config.HISTORICAL_POLLING_DAYS)
-    saved_hist = state.get('last_historical_config', None)
-    last_timestamp = state.get('last_timestamp', 0)
-
-    if saved_hist != current_hist:
-        msg = f"Config changed from '{saved_hist}' to '{current_hist}'."
-        logger.info(msg)
-        state['last_timestamp'] = 0 
-        state['last_historical_config'] = current_hist
-        save_state(state)
-        last_timestamp = 0
-
-    if last_timestamp == 0:
-        days = parse_days_or_date(Config.HISTORICAL_POLLING_DAYS)
-        if days > 0:
-            logger.info(f"First run. Backfilling data from {days} days ago.")
-            start_dt = datetime.utcnow() - timedelta(days=days)
-            last_timestamp = int(start_dt.timestamp())
-        else:
-            last_timestamp = int(datetime.utcnow().timestamp())
-    
-    return last_timestamp
-
-
-def process_misp_batch(misp, secops, last_timestamp, page):
-    """Fetches a batch from MISP, converts, and sends to SecOps."""
-    attributes = misp.fetch_attributes(
-        last_timestamp=last_timestamp, 
-        page=page, 
-        limit=Config.FORWARDER_BATCH_SIZE
-    )
-    if not attributes:
-        return 0, []
-
-    entities = []
-    display_items = []
-    skipped_types = {}
-    for attr in attributes:
-        entity = SecOpsManager.convert_to_entity(attr)
-        if entity:
-            entities.append(entity)
-            display_items.append({
-                'type': attr.get('type', 'unknown'),
-                'value': attr.get('value', 'N/A'),
-                'date': (attr.get('timestamp', 'N/A') if 'date' not in attr 
-                         else attr['date']),
-                'vendor': entity.get('metadata', {}).get('vendor_name', 
-                                                       'Unknown'),
-                'product': entity.get('metadata', {}).get('product_name', 
-                                                        'MISP')
-            })
-        else:
-            atype = attr.get('type', 'unknown')
-            skipped_types[atype] = skipped_types.get(atype, 0) + 1
-
-    if skipped_types:
-        msg = f"Skipped {sum(skipped_types.values())}: {skipped_types}"
-        logger.warning(msg)
-
-    if entities:
-        log_summary_table(display_items)
-        secops.send_entities(entities)
-        append_to_csv(entities)
-    
-    return len(attributes), entities
-
-
 def run_worker_loop(misp, secops, state, args, current_config_mtime):
-    """Main processing loop with support for hot-reloading configuration."""
+    # The main processing loop.
+    
     config_path = args.config if args.config else "config.json"
     
     def check_for_changes():
+        # Check if config file has been modified.
         if not (config_path and os.path.exists(config_path)):
             return False
-        return os.path.getmtime(config_path) != current_config_mtime
         
-    last_timestamp = handle_historical_sync(state)
+        mtime = os.path.getmtime(config_path)
+        if mtime != current_config_mtime:
+            return True
+        return False
+        
+    last_timestamp = state.get('last_timestamp', 0)
+    
+    current_hist_setting = str(Config.HISTORICAL_POLLING_DATE)
+    saved_hist_setting = state.get('last_historical_config', None)
+    
+    if saved_hist_setting != current_hist_setting:
+        msg = (
+            f"Historical Polling config changed from "
+            f"'{saved_hist_setting}' to '{current_hist_setting}'."
+        )
+        logger.info(msg)
+        
+        hist_days = parse_days_or_date(Config.HISTORICAL_POLLING_DATE)
+        if hist_days > 0:
+            start_dt = datetime.utcnow() - timedelta(days=hist_days)
+            new_ts = int(start_dt.timestamp())
+            msg = (
+                f"Resetting sync start time to {start_dt} (UTC) "
+                "based on new config."
+            )
+            logger.info(msg)
+            last_timestamp = new_ts
+            state['last_timestamp'] = last_timestamp
+
+        state['last_historical_config'] = current_hist_setting
+        save_state(state)
+    
+    elif last_timestamp == 0:
+        hist_days = parse_days_or_date(Config.HISTORICAL_POLLING_DATE)
+        if hist_days > 0:
+             msg = (
+                 f"First run detected. Backfilling from "
+                 f"{hist_days} days ago."
+             )
+             logger.info(msg)
+             start_dt = datetime.utcnow() - timedelta(days=hist_days)
+             last_timestamp = int(start_dt.timestamp())
+        else:
+             last_timestamp = int(datetime.utcnow().timestamp())
+             
     total_events_sent = 0
 
     while True:
         if check_for_changes():
-            raise ConfigRestartException()
+             raise ConfigRestartException()
              
-        logger.info("Polling MISP for new threat indicators...")
+        logger.info("Checking MISP for new indicators...")
         sync_start_ts = int(datetime.utcnow().timestamp())
         page = 1
         total_processed = 0
         
         while True:
             if check_for_changes():
-                raise ConfigRestartException()
+                 raise ConfigRestartException()
+                 
+            attributes = misp.fetch_attributes(
+                last_timestamp=last_timestamp, 
+                page=page, 
+                limit=Config.FORWARDER_BATCH_SIZE
+            )
             
-            count, entities = process_misp_batch(misp, secops, 
-                                                 last_timestamp, page)
-            if count == 0:
-                break
-                
-            total_events_sent += len(entities)
-            total_processed += count
+            if not attributes:
+                 break
+            
+            msg = (
+                f"Retrieved {len(attributes)} attributes "
+                f"(Page {page})."
+            )
+            logger.info(msg)
+            
+            pairs = []
+            display_items = []
+            skipped_types = {}
+            
+            for attr in attributes:
+                entity = SecOpsManager.convert_to_entity(attr)
+                if entity:
+                    pairs.append((attr, entity))
+                    date_val = (
+                        attr.get('timestamp', 'N/A')
+                        if 'date' not in attr
+                        else attr['date']
+                    )
+                    vendor_val = entity.get('metadata', {}).get(
+                        'vendor_name', 'Unknown'
+                    )
+                    product_val = entity.get('metadata', {}).get(
+                        'product_name', 'MISP'
+                    )
+                    display_items.append({
+                        'type': attr.get('type', 'unknown'),
+                        'value': attr.get('value', 'N/A'),
+                        'date': date_val,
+                        'vendor': vendor_val,
+                        'product': product_val
+                    })
+                else:
+                    atype = attr.get('type', 'unknown')
+                    skipped_types[atype] = skipped_types.get(atype, 0) + 1
+            
+            if skipped_types:
+                msg = (
+                    f"Skipped {sum(skipped_types.values())} "
+                    f"attributes due to unsupported types: "
+                    f"{skipped_types}"
+                )
+                logger.warning(msg)
+            
+            if not pairs and attributes:
+                msg = "All fetched attributes were skipped. No data."
+                logger.warning(msg)
+            
+            if pairs:
+                log_summary_table(display_items)
+                for i in range(0, len(pairs), Config.FORWARDER_BATCH_SIZE):
+                    batch_pairs = pairs[i : i + Config.FORWARDER_BATCH_SIZE]
+                    batch_entities = [p[1] for p in batch_pairs]
+                    
+                    secops.send_entities(batch_entities)
+                    append_to_csv(batch_pairs)
+                    
+                    total_events_sent += len(batch_entities)
+                    
+                    if (Config.TEST_MODE and
+                        total_events_sent >= Config.MAX_TEST_EVENTS):
+                        msg = (
+                            f"Test limit ({Config.MAX_TEST_EVENTS}) "
+                            "reached. Exiting."
+                        )
+                        logger.info(msg)
+                        sys.exit(0)
+                        
+            total_processed += len(attributes)
             page += 1
             
-            if (Config.TEST_MODE and 
-                total_events_sent >= Config.MAX_TEST_EVENTS):
-                logger.info(f"Test limit reached ({Config.MAX_TEST_EVENTS}).")
-                sys.exit(0)
-            
         if total_processed > 0:
-            logger.info(f"Processed {total_processed} indicators.")
+            logger.info("Threat data delivered to SecOps.")
         else:
             logger.info("No new threat indicators found.")
             
@@ -318,27 +442,38 @@ def run_worker_loop(misp, secops, state, args, current_config_mtime):
         save_state(state)
         last_timestamp = sync_start_ts
         
-        logger.info(f"Sync cycle complete. Waiting {Config.FETCH_INTERVAL}s.")
+        msg = f"Sync complete. Sleeping {Config.FETCH_INTERVAL}s."
+        logger.info(msg)
         smart_sleep(Config.FETCH_INTERVAL, check_for_changes)
 
 
 def main():
-    """Main entry point for the forwarder application."""
+    # Main entry point.
     display_banner()
     args = parse_args()
+    
     config_path = args.config if args.config else "config.json"
     
     if os.path.exists(config_path):
+        msg = (
+            "The application is loading your custom configuration "
+            f"settings from {config_path}."
+        )
+        logger.info(msg)
         Config.reload_from_file(config_path)
     
-    if args.fetch_interval: Config.FETCH_INTERVAL = args.fetch_interval
-    if args.fetch_page_size: Config.FETCH_PAGE_SIZE = args.fetch_page_size
-    if args.forwarder_batch_size: 
+    if args.fetch_interval:
+        Config.FETCH_INTERVAL = args.fetch_interval
+    if args.fetch_page_size:
+        Config.FETCH_PAGE_SIZE = args.fetch_page_size
+    if args.forwarder_batch_size:
         Config.FORWARDER_BATCH_SIZE = args.forwarder_batch_size
-    if args.test_mode: Config.TEST_MODE = True
-    if args.max_test_events: Config.MAX_TEST_EVENTS = args.max_test_events
-    if args.historical_polling_days: 
-        Config.HISTORICAL_POLLING_DAYS = args.historical_polling_days
+    if args.test_mode:
+        Config.TEST_MODE = True
+    if args.max_test_events:
+        Config.MAX_TEST_EVENTS = args.max_test_events
+    if args.historical_polling_days:
+        Config.HISTORICAL_POLLING_DATE = args.historical_polling_days
     
     update_log_level()
     
@@ -348,32 +483,54 @@ def main():
         logger.critical(f"Configuration Invalid: {e}")
         sys.exit(1)
         
+    logger.info("Initializing MISP and SecOps connections...")
     misp = MispClient()
     secops = SecOpsManager()
     
     if not misp.test_connection():
-         logger.error("MISP connection failed. Retrying in cycle.")
+         msg = "MISP connection failed. Application will retry."
+         logger.error(msg)
          
     state = load_state()
-    current_mtime = os.path.getmtime(config_path) if os.path.exists(config_path) else 0
     
-    logger.info("MISP to Google SecOps Forwarder starting...")
+    current_mtime = 0
+    if os.path.exists(config_path):
+        current_mtime = os.path.getmtime(config_path)
+        
+    msg = (
+        "The MISP to Google SecOps Forwarder is now Starting "
+    )
+    logger.info(msg)
 
     while True:
         try:
             run_worker_loop(misp, secops, state, args, current_mtime)
+            
         except ConfigRestartException:
-            logger.info("Configuration updated. Restarting loop.")
+            logger.info("Configuration updated")
+            
             if os.path.exists(config_path):
                 Config.reload_from_file(config_path)
                 current_mtime = os.path.getmtime(config_path)
+            
             update_log_level()
+            
+            try:
+                Config.validate()
+            except ValueError as e:
+                msg = (
+                    f"Reloaded configuration is invalid: {e}. "
+                    "Attempting to proceed anyway."
+                )
+                logger.error(msg)
+
+            logger.info("Restarting processing loop with new config")
+            
         except KeyboardInterrupt:
             signal_handler(None, None)
         except Exception as e:
             logger.error(f"Unexpected Error: {e}")
             time.sleep(60)
-
 
 if __name__ == "__main__":
     main()
