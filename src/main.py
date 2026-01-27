@@ -232,56 +232,6 @@ def smart_sleep(seconds, check_config_func):
             raise ConfigRestartException()
 
 
-CSV_FILE = "misp_data/pushed_events.csv"
-
-def append_to_csv(data_pairs):
-    # Append pushed entities to CSV file for tracking.
-    if not data_pairs:
-        return
-        
-    try:
-        file_exists = os.path.exists(CSV_FILE)
-        os.makedirs(os.path.dirname(CSV_FILE), exist_ok=True)
-        
-        with open(CSV_FILE, 'a') as f:
-            if not file_exists:
-                header = (
-                    "now_timestamp,misp_uuid,misp_type,value,"
-                    "udm_type,severity,vendor,event_info\n"
-                )
-                f.write(header)
-            
-            now = datetime.utcnow().isoformat()
-            for attr, entity in data_pairs:
-                 metadata = entity.get('metadata', {})
-                 val = extract_entity_value(entity)
-                 udm_type = metadata.get('entity_type', 'UNKNOWN')
-                 vendor = metadata.get('vendor_name', 'N/A')
-                 
-                 threats = metadata.get('threat', [])
-                 severity = (
-                     threats[0].get('severity', 'N/A')
-                     if threats else 'N/A'
-                 )
-                 event_info = (
-                     threats[0].get('summary', 'N/A')
-                     if threats else 'N/A'
-                 )
-                 
-                 misp_uuid = attr.get('uuid', 'N/A')
-                 misp_type = attr.get('type', 'N/A')
-                 
-                 info_safe = str(event_info).replace(',', ';')
-                 info_safe = info_safe.replace('\n', ' ')
-                 line = (
-                     f"{now},{misp_uuid},{misp_type},{val},"
-                     f"{udm_type},{severity},{vendor},{info_safe}\n"
-                 )
-                 f.write(line)
-                 
-        logger.info(f"Appended {len(data_pairs)} events to {CSV_FILE}")
-    except Exception as e:
-        logger.error(f"Failed to write to CSV tracking file: {e}")
 
 def run_worker_loop(misp, secops, state, args, current_config_mtime):
     # The main processing loop.
@@ -417,7 +367,6 @@ def run_worker_loop(misp, secops, state, args, current_config_mtime):
                     batch_entities = [p[1] for p in batch_pairs]
                     
                     secops.send_entities(batch_entities)
-                    append_to_csv(batch_pairs)
                     
                     total_events_sent += len(batch_entities)
                     
