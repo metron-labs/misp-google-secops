@@ -104,14 +104,6 @@ When IoCs are ingested as Entity Context, they:
    - Docker and Docker Compose installed
    - Linux host (tested on Ubuntu 20.04+)
    - Network access to both MISP and Google APIs
-
-### Required Files
-
-- `credentials.json` - Google Service Account key
-- `config.json` - Application configuration
-- `.env` - Environment variables
-- `assets/custom.png` - Startup banner image (optional)
-
 ---
 
 ## Installation
