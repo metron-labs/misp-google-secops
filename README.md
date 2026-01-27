@@ -156,7 +156,17 @@ cd misp-secops-forwarder
 
 ### Environment Variables (.env)
 
-Create a `.env` file in the project root:
+Create your local `.env` file by copying the template and filling in your specific details:
+
+```bash
+# Linux / macOS / PowerShell
+cp .env.example .env
+
+# Windows (Command Prompt)
+copy .env.example .env
+```
+
+Edit the `.env` file with your specific values:
 
 ```bash
 # MISP Configuration
