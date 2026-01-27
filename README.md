@@ -213,7 +213,7 @@ The repository includes a `config.json` file with default settings. You can revi
 2. **Start the forwarder:**
 
    ```bash
-   docker compose up -d
+   docker compose up
    ```
 
 3. **View logs:**
@@ -226,24 +226,6 @@ The repository includes a `config.json` file with default settings. You can revi
    ```bash
    docker compose down
    ```
-
-### Using Docker Run (Alternative)
-
-```bash
-# Build
-docker build -t misp-forwarder .
-
-# Run
-docker run -d \
-  --name misp-secops-forwarder \
-  --network host \
-  --env-file .env \
-  -v "$(pwd)/credentials.json:/app/credentials.json" \
-  -v "$(pwd)/misp_data:/app/data" \
-  -v "$(pwd)/config.json:/app/config.json" \
-  -v "$(pwd)/assets/custom.png:/app/assets/custom.png" \
-  misp-forwarder --config /app/config.json
-```
 
 ### First Run Verification
 
@@ -338,9 +320,6 @@ You can reset the synchronization start time to a specific point in the past by 
 Updating this value via `manage.py` will automatically trigger a resync from the new date, resetting the current progress.
 
 ```bash
-# Reset sync to look back 30 days from now
-docker exec misp-secops-forwarder python manage.py set HISTORICAL_POLLING_DATE 30
-
 # Reset sync to a specific date
 docker exec misp-secops-forwarder python manage.py set HISTORICAL_POLLING_DATE 2024-01-01
 ```
@@ -609,13 +588,7 @@ docker compose up -d
 
 ---
 
-## Advanced Topics
-
-### Custom Banner
-
-Replace `assets/custom.png` with your own image. The application uses `chafa` to render it as ASCII art on startup.
-
-### Production Deployment
+## Production Deployment
 
 **Recommendations:**
 
@@ -637,4 +610,4 @@ Replace `assets/custom.png` with your own image. The application uses `chafa` to
 ## Support & Contributing
 
 For issues, questions, or contributions, please refer to the project repository:
-@
+support@metronlabs.com
