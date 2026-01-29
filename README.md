@@ -133,7 +133,7 @@ cd misp-secops-forwarder
 ### Step 3: Get Your SecOps Customer ID
 
 1. Log into [Google SecOps Console](https://chronicle.security)
-2. Navigate to **Settings > API Access**
+2. Navigate to **Settings > SIEM Settings**
 3. Copy your **Customer ID** (format: `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)
 
 ### Step 4: Get Your MISP API Key
