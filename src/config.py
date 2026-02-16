@@ -83,6 +83,7 @@ class Config:
             'FETCH_PAGE_SIZE': int,
             'FORWARDER_BATCH_SIZE': int,
             'IOC_EXPIRATION_DAYS': int,
+            'HISTORICAL_POLLING_DATE': str,
             'TEST_MODE': bool,
             'MAX_TEST_EVENTS': int
         }

@@ -59,7 +59,9 @@ class MispClient:
                     last_timestamp, until_timestamp
                 ]
             else:
-                payload['timestamp'] = last_timestamp
+                # defaulting to the current time if until_timestamp is not set.
+                current_ts = int(datetime.utcnow().timestamp())
+                payload['timestamp'] = [last_timestamp, current_ts]
         
         try:
             msg = (

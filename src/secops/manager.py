@@ -165,11 +165,14 @@ class SecOpsManager:
         start_time = datetime.utcnow()
         end_time = start_time + timedelta(days=90)
         
+        # Use MISP attribute timestamp for deterministic payloads
+        # This enables Google SecOps deduplication based on content hash
+        misp_timestamp = attribute.get('timestamp')
+        collected_ts = SecOpsManager._format_timestamp(misp_timestamp)
+        
         entity_context = {
             "metadata": {
-                "collected_timestamp": (
-                    SecOpsManager._get_current_timestamp_rfc3339()
-                ),
+                "collected_timestamp": collected_ts,
                 "vendor_name": orgc_name,
                 "product_name": "MISP",
                 "entity_type": entity_type,

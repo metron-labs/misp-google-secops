@@ -252,6 +252,8 @@ def run_worker_loop(misp, secops, state, args, current_config_mtime):
     
     current_hist_setting = str(Config.HISTORICAL_POLLING_DATE)
     saved_hist_setting = state.get('last_historical_config', None)
+
+    logger.debug(f"Checking historical configuration change. Current: '{current_hist_setting}', Saved: '{saved_hist_setting}'")
     
     if saved_hist_setting != current_hist_setting:
         msg = (
@@ -285,6 +287,7 @@ def run_worker_loop(misp, secops, state, args, current_config_mtime):
              logger.info(msg)
              start_dt = datetime.utcnow() - timedelta(days=hist_days)
              last_timestamp = int(start_dt.timestamp())
+             logger.debug(f"Calculated start_dt: {start_dt}, last_timestamp: {last_timestamp}")
         else:
              last_timestamp = int(datetime.utcnow().timestamp())
              
