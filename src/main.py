@@ -1,15 +1,17 @@
 import argparse
 import json
 import logging
-import time
 import os
 import signal
 import sys
+import time
 import subprocess
 from datetime import datetime, timedelta
 from src.config import Config
 from src.misp.client import MispClient
 from src.secops.manager import SecOpsManager
+from src.utils.validation import validate_historical_date
+
 
 # Configure logging
 logging.basicConfig(
@@ -113,46 +115,13 @@ def extract_entity_value(entity_data):
     return "N/A"
 
 def parse_days_or_date(val):
-    # Parse value as days (int) or date (YYYY-MM-DD).
-    if not val:
-        return 0
-    val = str(val).strip()
+    # Parse value as date (YYYY-MM-DD).
     try:
-        target_date = datetime.strptime(val, '%Y-%m-%d')
-        
-        if target_date > datetime.utcnow():
-            msg = (
-                f"Invalid HISTORICAL_POLLING_DATE: '{val}' is in "
-                "the future. Historical polling can only look back "
-                "at past data. Please provide a date that is today "
-                "or earlier. Disabling historical polling (using 0 "
-                "days)."
-            )
-            logger.error(msg)
-            return 0
-            
-        delta = (datetime.utcnow() - target_date).days
-        return max(0, delta)
-    except ValueError:
-        try:
-            days = int(val)
-            if days < 0:
-                msg = (
-                    f"Invalid HISTORICAL_POLLING_DATE: Negative days "
-                    f"({days}) are not allowed. Please use 0 to "
-                    "disable historical polling or a positive number. "
-                    "Disabling historical polling (using 0 days)."
-                )
-                logger.error(msg)
-                return 0
-            return days
-        except ValueError:
-            msg = (
-                f"Invalid value: {val}. Must be integer days or "
-                "YYYY-MM-DD."
-            )
-            logger.error(msg)
-            return 0
+        return validate_historical_date(val)
+    except ValueError as e:
+        logger.error(str(e))
+        return 0
+
 
 def log_summary_table(items):
     # Logs a structured ASCII table of threat entities.

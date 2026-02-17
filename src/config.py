@@ -2,6 +2,10 @@ import os
 from dotenv import load_dotenv
 import json
 import logging
+from src.utils.validation import (
+    validate_batch_size,
+    MAX_ALLOWED_BATCH_SIZE
+)
 
 logger = logging.getLogger(__name__)
 
@@ -106,20 +110,18 @@ class Config:
             except (ValueError, TypeError):
                 pass
 
-    MAX_ALLOWED_BATCH_SIZE = 500
-
     @staticmethod
     def validate():
         # Validate critical configuration.
-        if Config.FORWARDER_BATCH_SIZE > Config.MAX_ALLOWED_BATCH_SIZE:
-            msg = (
-                f"FORWARDER_BATCH_SIZE "
-                f"({Config.FORWARDER_BATCH_SIZE}) exceeds safety "
-                f"limit. Capping to {Config.MAX_ALLOWED_BATCH_SIZE} "
-                f"to stay within API payload limits (4MB)."
+        try:
+            Config.FORWARDER_BATCH_SIZE = validate_batch_size(
+                Config.FORWARDER_BATCH_SIZE
             )
+        except ValueError as e:
+            msg = f"{e} Capping to {MAX_ALLOWED_BATCH_SIZE}."
             logging.getLogger("misp-forwarder").warning(msg)
-            Config.FORWARDER_BATCH_SIZE = Config.MAX_ALLOWED_BATCH_SIZE
+            Config.FORWARDER_BATCH_SIZE = MAX_ALLOWED_BATCH_SIZE
+
 
         missing = []
         if not Config.MISP_URL:

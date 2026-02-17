@@ -1,11 +1,13 @@
-#!/usr/bin/env python3
-# Configuration Management CLI Tool
-# Allows runtime updates to config.json
 import argparse
 import json
 import logging
 import os
 import sys
+
+# Ensure root directory is in sys.path for module discovery
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from src.utils.validation import validate_config_value
 
 # Configure logging
 logging.basicConfig(
@@ -13,6 +15,7 @@ logging.basicConfig(
     format='%(message)s',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
+
 logger = logging.getLogger("config-manager")
 
 CONFIG_FILE = "config.json"
@@ -105,6 +108,7 @@ def cmd_set(args):
     
     try:
         new_value = convert_value(key, args.value)
+        validate_config_value(key, new_value)
     except ValueError as e:
         logger.error(f"Error: {e}")
         sys.exit(1)
@@ -113,6 +117,7 @@ def cmd_set(args):
     config[key] = new_value
     save_config(config)
     logger.info(f"Updated {key}: {old_value} -> {new_value}")
+
 
 def main():
     # Main entry point.
