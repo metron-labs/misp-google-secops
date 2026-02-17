@@ -1,4 +1,4 @@
-# MISP to Google SecOps Forwarder
+# MISP Threat Intelligence Forwarder for Google SecOps
 
 A production-ready integration that continuously synchronizes threat intelligence from **[MISP (Malware Information Sharing Platform)](https://www.misp-project.org/)** to Google Security Operations (SecOps), enabling real-time threat detection and correlation.
 
