@@ -1,15 +1,17 @@
 import argparse
 import json
 import logging
-import time
 import os
 import signal
 import sys
+import time
 import subprocess
 from datetime import datetime, timedelta
 from src.config import Config
 from src.misp.client import MispClient
 from src.secops.manager import SecOpsManager
+from src.utils.validation import validate_historical_date
+
 
 # Configure logging
 logging.basicConfig(
@@ -114,37 +116,12 @@ def extract_entity_value(entity_data):
 
 def parse_days_or_date(val):
     # Parse value as date (YYYY-MM-DD).
-    if not val:
-        return 0
-    
-    val = str(val).strip()
-    
-    # Check for disabled values
-    if val in ["0", "0000-00-00"]:
-        return 0
-    
     try:
-        target_date = datetime.strptime(val, '%Y-%m-%d')
-        
-        if target_date > datetime.utcnow():
-            msg = (
-                f"Invalid HISTORICAL_POLLING_DATE: '{val}' is in "
-                "the future. Historical polling can only look back "
-                "at past data. Please provide a date that is today "
-                "or earlier."
-            )
-            logger.error(msg)
-            return 0
-            
-        delta = (datetime.utcnow() - target_date).days
-        return max(0, delta)
-    except ValueError:
-        msg = (
-            f"Invalid HISTORICAL_POLLING_DATE: '{val}'. "
-            "Must be in YYYY-MM-DD format or '0000-00-00' to disable."
-        )
-        logger.error(msg)
+        return validate_historical_date(val)
+    except ValueError as e:
+        logger.error(str(e))
         return 0
+
 
 def log_summary_table(items):
     # Logs a structured ASCII table of threat entities.
