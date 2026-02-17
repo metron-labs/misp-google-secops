@@ -75,6 +75,71 @@ def convert_value(key, value):
             )
     return value
 
+def validate_value(key, value):
+    # Validate configuration value before saving.
+    from datetime import datetime
+    
+    if key == "HISTORICAL_POLLING_DATE":
+        val_str = str(value).strip()
+        
+        # Allow disabled values
+        if val_str in ["0", "0000-00-00"]:
+            return value
+        
+        try:
+            target_date = datetime.strptime(val_str, '%Y-%m-%d')
+            if target_date > datetime.utcnow():
+                raise ValueError(
+                    f"Invalid HISTORICAL_POLLING_DATE: '{val_str}' is in "
+                    "the future. Historical polling can only look back at "
+                    "past data. Please provide a date that is today or earlier."
+                )
+        except ValueError as e:
+            if "Invalid HISTORICAL_POLLING_DATE" in str(e):
+                raise
+            raise ValueError(
+                f"Invalid HISTORICAL_POLLING_DATE: '{val_str}'. "
+                "Must be in YYYY-MM-DD format or '0000-00-00' to disable."
+            )
+    
+    elif key == "FORWARDER_BATCH_SIZE":
+        MAX_BATCH_SIZE = 500
+        if value > MAX_BATCH_SIZE:
+            raise ValueError(
+                f"Invalid FORWARDER_BATCH_SIZE: {value} exceeds maximum "
+                f"allowed limit of {MAX_BATCH_SIZE}. This limit ensures "
+                "compliance with Google SecOps API payload restrictions (4MB)."
+            )
+        if value < 1:
+            raise ValueError(
+                f"Invalid FORWARDER_BATCH_SIZE: {value}. "
+                "Batch size must be at least 1."
+            )
+    
+    elif key == "FETCH_INTERVAL":
+        if value < 1:
+            raise ValueError(
+                f"Invalid FETCH_INTERVAL: {value}. "
+                "Interval must be at least 1 second."
+            )
+    
+    elif key == "IOC_EXPIRATION_DAYS":
+        if value < 1:
+            raise ValueError(
+                f"Invalid IOC_EXPIRATION_DAYS: {value}. "
+                "Expiration must be at least 1 day."
+            )
+    
+    elif key == "LOG_LEVEL":
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if value.upper() not in valid_levels:
+            raise ValueError(
+                f"Invalid LOG_LEVEL: '{value}'. "
+                f"Must be one of: {', '.join(valid_levels)}"
+            )
+    
+    return value
+
 def cmd_list(args):
     # List all configuration values.
     config = load_config()
@@ -105,6 +170,7 @@ def cmd_set(args):
     
     try:
         new_value = convert_value(key, args.value)
+        validate_value(key, new_value)
     except ValueError as e:
         logger.error(f"Error: {e}")
         sys.exit(1)

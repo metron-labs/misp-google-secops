@@ -113,10 +113,16 @@ def extract_entity_value(entity_data):
     return "N/A"
 
 def parse_days_or_date(val):
-    # Parse value as days (int) or date (YYYY-MM-DD).
+    # Parse value as date (YYYY-MM-DD).
     if not val:
         return 0
+    
     val = str(val).strip()
+    
+    # Check for disabled values
+    if val in ["0", "0000-00-00"]:
+        return 0
+    
     try:
         target_date = datetime.strptime(val, '%Y-%m-%d')
         
@@ -125,8 +131,7 @@ def parse_days_or_date(val):
                 f"Invalid HISTORICAL_POLLING_DATE: '{val}' is in "
                 "the future. Historical polling can only look back "
                 "at past data. Please provide a date that is today "
-                "or earlier. Disabling historical polling (using 0 "
-                "days)."
+                "or earlier."
             )
             logger.error(msg)
             return 0
@@ -134,25 +139,12 @@ def parse_days_or_date(val):
         delta = (datetime.utcnow() - target_date).days
         return max(0, delta)
     except ValueError:
-        try:
-            days = int(val)
-            if days < 0:
-                msg = (
-                    f"Invalid HISTORICAL_POLLING_DATE: Negative days "
-                    f"({days}) are not allowed. Please use 0 to "
-                    "disable historical polling or a positive number. "
-                    "Disabling historical polling (using 0 days)."
-                )
-                logger.error(msg)
-                return 0
-            return days
-        except ValueError:
-            msg = (
-                f"Invalid value: {val}. Must be integer days or "
-                "YYYY-MM-DD."
-            )
-            logger.error(msg)
-            return 0
+        msg = (
+            f"Invalid HISTORICAL_POLLING_DATE: '{val}'. "
+            "Must be in YYYY-MM-DD format or '0000-00-00' to disable."
+        )
+        logger.error(msg)
+        return 0
 
 def log_summary_table(items):
     # Logs a structured ASCII table of threat entities.

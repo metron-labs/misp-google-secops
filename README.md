@@ -189,7 +189,7 @@ The repository includes a `config.json` file with default settings. You can revi
   "IOC_EXPIRATION_DAYS": 30,
   "TEST_MODE": false,
   "MAX_TEST_EVENTS": 3,
-  "HISTORICAL_POLLING_DATE": 7,
+  "HISTORICAL_POLLING_DATE": "0000-00-00",
   "LOG_LEVEL": "INFO"
 }
 ```
